@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <link  href="/static/css/bootstrap-4.3.1.min.css" rel="stylesheet" >
+    <link  href="/static/css/jquery-ui.css" rel="stylesheet" >
+    <link href="/static/css/datatables.min.css" rel="stylesheet">
+    <link href="/static/css/buttons.dataTables.min.css" rel="stylesheet">
+    <link href="/static/css/bootstrap-select.min.css" rel="stylesheet">
+    <link href="/static/css/custom.css" rel="stylesheet">
+
+    <script src="/static/js/jquery-3.3.1.js"></script>
+    <script src="/static/js/jquery-ui.min.js"></script>
+    <script src="/static/js/popper.min.js"></script>
+    <script src="/static/js/bootstrap-4.3.1.bundle.min.js"></script>
+    <script src="/static/js/datatables.min.js"></script>
+    <script src="/static/js/buttons.flash.min.js"></script>
+    <script src="/static/js/dataTables.buttons.min.js"></script>
+    <script src="/static/js/jszip.min.js"></script>
+    <script src="/static/js/pdfmake.min.js"></script>
+    <script src="/static/js/vfs_fonts.js"></script>
+    <script src="/static/js/buttons.html5.min.js"></script>
+    <script src="/static/js/buttons.print.min.js"></script>
+    <script src="/static/js/bootstrap-select.min.js"></script>
+        
+    <script src="/static/js/mobilesuica.js"></script>
+
+  </head>
+
+  <div class="container">
+    
+    <div class="jumbotron text-center">
+      <h1>モバイルSuicaの履歴を簡単に編集</h1>
+      <h3>編集結果を簡単にCSVやPDFで出力</h3>
+    </div>
+    
+    <div id="top_wrapper">
+      <div id="DnDBox" draggable="true">ここにモバイルSuicaの利用履歴のPDFをドロップ</div>
+      <br>
+        <div class="text-center">
+          <label>
+            <span class="btn btn-primary">アップロードするPDFファイルを選択
+              <input multiple="multiple" id="upload_file" type="file" style="display: none">
+            </span>
+          </label>
+        </div>
+    </div>
+
+    <div class="row">
+      <div class="col-12">
+        <div id="ms_usage_wrapper" style="display: none;">
+          <div class="text-center">
+            <button id="recommend1" class="btn btn-danger">
+              <p style="font-size: 30px;">お勧め設定</p>
+              種別と残額の列を削除<br>
+              チャージ（VIEWと現金）、物販、繰の項目を削除<br>
+              差額を運賃に変更、運賃のプラスマイナスを反転、￥を付ける <br>
+              一番下に合計額を表示
+            </button>
+          </div>
+          <hr>
+          
+          <div class="text-center">
+            <button type="button" class="btn btn-primary" data-toggle="collapse" data-target="#collapse_wrapper">詳細メニュー</button>
+          </div>
+          <div id="collapse_wrapper" class="collapse text-left">
+            <hr>
+
+            <button id="back_to_default_button" class="btn btn-outline-primary">最初の状態に戻す</button>
+            <button id="delete_row" class="btn btn-outline-primary">選択した行を削除</button>
+            <button id="reverse" class="btn btn-outline-primary">差額の符号を逆にする</button>
+            <button id="add_yen" class="btn btn-outline-primary">差額に￥をつける</button>
+            <button id="show_sum" class="btn btn-outline-primary">合計値を表示</button>
+            <hr>
+            <select id="delete_row_bulk" class="selectpicker" multiple title="種別でまとめて行を削除" data-style="btn-outline-primary"
+            data-width="fit" data-selected-text-format="static">
+            </select>
+            <span id="deletedRowWrapper" style="display: none;">
+              <button class="btn btn-info" disabled>現在全て消去されている種別</button>
+              <span id="deletedRowType"></span>
+            </span>
+            <hr>
+            
+            <select id="hide_column" class="selectpicker" multiple title="選択した列を隠す" data-style="btn-outline-primary"
+            data-width="fit" data-selected-text-format="static">
+            </select>
+            <span id="deletedColumnWrapper" style="display: none;">
+              <button class="btn btn-info" disabled>現在隠されている列</button>
+              <span id="deletedColumnType"></span>
+            </span>
+            <hr>
+          </div>
+          <table id="ms_usage_table" class="table" style="width:100%">
+            <thead>
+              <tr id="table_header">
+                <th class="ms_checkbox"><input type="checkbox" id="all_checks" ></th>
+                <th class="ms_month">月</th>
+                <th class="ms_day">日</th>
+                <th class="ms_type1">種別</th>
+                <th class="ms_boarding_station">利用駅</th>
+                <th class="ms_type2">種別</th>
+                <th class="ms_gettingoff_station">利用駅</th>
+                <th class="ms_balance">残額</th>
+                <th class="ms_diff">差額</th>
+              </tr>
+            </thead>
+            <tbody id="ms_usage_list">
+
+            </tbody>
+            <tfoot>
+              <tr id="footer">
+                <th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="deleteRowBulkConfirmModal" data-backdrop="static">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title">選択された行を削除しますか？</h4>
+        <button type="button" class="close" data-dismiss="modal"><span>×</span></button>
+      </div>
+      <div class="modal-body modal-body-progress">
+        <span id="numRemove"></span>行が削除されます<br>（削除した行を戻す場合は「最初の状態に戻す」をクリック）
+      </div>
+      <div class="modal-footer">
+        <button id="deleteRowBulkSelected" type="button" class="btn btn-primary">消去</button>
+        <button type="button" class="btn btn-outline-primary" data-dismiss="modal">キャンセル（選択状態維持）</button>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+<script>
+
+  $('#all_checks').click(all_select)
+  $('#ms_usage_list').click(ind_select)
+  $('#back_to_default_button').click(back_to_default_button)
+  $('#delete_row').click(delete_row)
+  $('#deleteRowBulkSelected').click(delete_row)
+  $('#reverse').click(reverse)
+  $('#add_yen').click(add_yen)
+  $('#show_sum').click(show_sum)
+  $('#recommend1').click(recommend1)
+  $('#delete_row_bulk').change(delete_row_bulkWrapper)
+  $('#delete_row_bulk').on('hide.bs.select',delete_row_bulkClose)
+  $('#hide_column').change(hide_column)
+  $('#upload_file').change(upload_files_wrapper)
+  $('#DnDBox').on('dragenter',DnD)
+  $('#DnDBox').on('dragover',DnD)
+  $('#DnDBox').on('dragstart',DnD)
+  $('#DnDBox').on('drop',DnD)
+  $(document).on('dragenter',DnDdocument)
+  $(document).on('dragover',DnDdocument)
+  $(document).on('dragstart',DnDdocument)
+  $('#deleteRowBulkConfirmModal').on('hidden.bs.modal',closeRemoveRowModal)
+
+</script>
+
+    </div>
+  </body>
+</html>
